@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 //#include <string>
+#include <stack>
+#include <queue>
 
 using namespace std;
 
@@ -71,24 +73,121 @@ vector<int> onkovetok_kivalogatasa(vector<vector<int>>& graf)
     return result;
 }
 
-bool ismeri(int i, int j) {
-    //...már megcsináltuk korábban. 
+/// <summary>
+/// megy-e él i-bõl j-be: 
+/// </summary>
+/// <param name="i"></param>
+/// <param name="j"></param>
+/// <returns></returns>
+bool ismeri(int i, int j, vector<vector<int>>& graf) {
+    for (int& elem : graf[i])
+    {
+        if (elem == j)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 vector<vector<int>> egymast_kovetok_megoldasa(vector<vector<int>> graf) 
 {
     vector<vector<int>> result;
-    for (int i = 0; i < graf.size(); i++)
+    for (int i = 0; i < graf.size()-1; i++)
     {
         for (int j = i+1; j < graf.size(); j++)
         {
-            if (ismeri(i,j) && ismeri(j,i))
+            //cerr << " ismeri_e: " << i << " " << j << "\n";
+            if (ismeri(i,j, graf) && ismeri(j,i, graf))
             {
                 result.push_back({ i, j });
             }
         }
     }
     return result;
+}
+
+bool elerheto_e_dfs(vector<vector<int>>& graf, const int& honnan, const int& hova) {
+    stack<int> todos;
+    todos.push(honnan);
+    
+    const int fekete = 0; // felfedezetlen és feldolgozatlan
+    const int zold = 1;   // felfedezett   de feldolgozatlan
+    const int kek = 2;    // felfedezett   és feldolgozott
+
+    vector<int> szine(graf.size(), fekete); // eleinte minden fekete! feldolgozatlan és felfedezetlen
+
+    while (!todos.empty())
+    {
+
+        // feldolgozunk egy elemet 
+        
+        int aktualis_tennivalo = todos.top();
+        todos.pop();
+
+        if (aktualis_tennivalo==hova)
+        {
+            return true;
+        }
+
+        szine[aktualis_tennivalo] = kek; // mert feldolgoztuk
+
+        // szomszédait felvesszük a teendõk közé / várólistára
+        
+        for (int& szomszed : graf[aktualis_tennivalo])
+        {
+            if (szine[szomszed] == fekete)
+            {
+                todos.push(szomszed);
+                szine[szomszed] = zold; // mert már felfedeztük, csak még nem dolgoztuk fel
+            }
+        }
+
+    }
+    return false;
+
+}
+
+
+bool elerheto_e_bfs(vector<vector<int>>& graf, const int& honnan, const int& hova) {
+    queue<int> todos;
+    todos.push(honnan);
+
+    const int fekete = 0; // felfedezetlen és feldolgozatlan
+    const int zold = 1;   // felfedezett   de feldolgozatlan
+    const int kek = 2;    // felfedezett   és feldolgozott
+
+    vector<int> szine(graf.size(), fekete); // eleinte minden fekete! feldolgozatlan és felfedezetlen
+
+    while (!todos.empty())
+    {
+
+        // feldolgozunk egy elemet 
+
+        int aktualis_tennivalo = todos.front();
+        todos.pop();
+
+        if (aktualis_tennivalo == hova)
+        {
+            return true;
+        }
+
+        szine[aktualis_tennivalo] = kek; // mert feldolgoztuk
+
+        // szomszédait felvesszük a teendõk közé / várólistára
+
+        for (int& szomszed : graf[aktualis_tennivalo])
+        {
+            if (szine[szomszed] == fekete)
+            {
+                todos.push(szomszed);
+                szine[szomszed] = zold; // mert már felfedeztük, csak még nem dolgoztuk fel
+            }
+        }
+
+    }
+    return false;
+
 }
 
 int main()
@@ -146,6 +245,27 @@ int main()
     cout << "2.7. feladat: egymást követõk\n";
 
     vector<vector<int>> egymast_kovetok = egymast_kovetok_megoldasa(graf);
+
+    for (vector<int>& par : egymast_kovetok)
+    {
+        cout << par[0] << " es " << par[1] << " kovetik egymast!\n";
+    }
+
+    cout << "elérhetõ-e...DFS:\n";
+
+    cout << elerheto_e_dfs(graf, 0, 29) << endl; // True
+    cout << elerheto_e_dfs(graf, 0, 30) << endl; // False
+    cout << elerheto_e_dfs(graf, 30, 39) << endl;// True
+    cout << elerheto_e_dfs(graf, 30, 40) << endl;// False
+    cout << elerheto_e_dfs(graf, 40, 49) << endl;// True
+
+    cout << "elérhetõ-e...BFS:\n";
+
+    cout << elerheto_e_bfs(graf, 0, 29) << endl; // True
+    cout << elerheto_e_bfs(graf, 0, 30) << endl; // False
+    cout << elerheto_e_bfs(graf, 30, 39) << endl;// True
+    cout << elerheto_e_bfs(graf, 30, 40) << endl;// False
+    cout << elerheto_e_bfs(graf, 40, 49) << endl;// True
 }
 
 
@@ -206,7 +326,7 @@ A következõ kérdésekre a szomszédsági lista alapján válaszolj!
 3. Gráfelméleti alapfogalmak
 11. Hány csúcsa és hány éle van a gráfnak ?
 12. Van - e a gráfban hurokél ? Ha igen, melyik csúcsnál ?
-13. Van - e a gráfban izolált csúcs, vagyis olyan csúcs, amelyhez egyetlen él sem kapcsolódik ?
+13. Van - e a gráfban izolált csúcs, vagyis olyan csúcs, amelyhez egyetlen él sem kapcsolódik és nem kapcsolódik õ se máshoz?
 14. Mely csúcsok kifoka 2 ?
 15. Mennyi a 4 - es csúcs befoka és kifoka ?
 16. Van - e olyan csúcs, amelynek kifoka 0, de befoka nem 0 ?
